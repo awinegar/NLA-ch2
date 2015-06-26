@@ -1143,6 +1143,7 @@ waterqual.dat.red$SECMEAN[is.na(waterqual.dat.red$SECMEAN)] <- median(waterqual.
 #PCA
 rownames(waterqual.dat.red)<- as.character(waterqual.dat.red[,1])
 waterqual.pca<- rda(decostand(waterqual.dat.red[,2:8], method="standardize"))
+summary(waterqual.pca)
 #Take a look at the biplot
 plot(waterqual.pca, dis=c("sp", "sites"))
 plot(waterqual.pca, type="n")
@@ -1152,6 +1153,7 @@ text(waterqual.pca, dis="sp")
 #Extract PC1 and PC2
 waterqual.scores<- as.data.frame(scores(waterqual.pca, dis="sites", choices=c(1:2))) #Site scores 
 #2 column dataframe, PC1 and PC2, where rownames show up as SITE_ID
+waterqual.sp.scores<- as.data.frame(scores(waterqual.pca, dis="sp", choices=c(1:2))) #Species scores
 
 #Bind SITE_ID to waterqual.scores
 waterqual.scores<- as.data.frame(cbind(waterqual.dat.red$SITE_ID, waterqual.scores))
@@ -1169,6 +1171,19 @@ dist.data<- read.csv(file.choose()) #nla2007_spatialdistances_April2015.csv
 
 hist(dist.data$km_between) #Spatial distances between sites 
 hist(dist.data$Env_distance_bray) #Environmental distances between sites 
+
+##Make a nice PCA plot for S2
+watqual.pca.plot<-ggplot()
+watqual.pca.plot<- watqual.pca.plot + geom_vline(x=0,colour="grey50") 
+watqual.pca.plot<- watqual.pca.plot+ geom_hline(y=0,colour="grey50") 
+watqual.pca.plot<- watqual.pca.plot + labs(x= "PC1 (54% var explained)", y= "PC2 (18% var exp)") + theme_bw()
+watqual.pca.plot<- watqual.pca.plot + geom_point(data = waterqual.scores, aes(x = PC1, y = PC2), size=4) 
+watqual.pca.plot<- watqual.pca.plot + geom_text(data = waterqual.sp.scores, aes(x = PC1, y = PC2, label=rownames(waterqual.sp.scores)), size=6) 
+watqual.pca.plot<- watqual.pca.plot + theme(axis.text.x = element_text(colour="black", size=16))
+watqual.pca.plot<- watqual.pca.plot + theme(axis.text.y = element_text(colour="black", size=16))
+watqual.pca.plot<- watqual.pca.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+watqual.pca.plot<- watqual.pca.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+
 
 
 ####Presence-absence diatoms#### 
@@ -2317,6 +2332,26 @@ colnames(temporalBD.landuse)[11]<- 'PCT_AGRIC_BSN'
 colnames(temporalBD.landuse)[12]<- 'PCT_WETLAND_BSN'
 #All same units (percent)- don't need to standardize. 
 
+
+#PCA of land use variables for S2 b
+landcover.pca<- rda(decostand(temporalBD.landuse[,7:12], method="standardize"))
+summary(landcover.pca)
+#Extract PC1 and PC2
+landcover.scores<- as.data.frame(scores(landcover.pca, dis="sites", choices=c(1:2))) #Site scores 
+landcover.sp.scores<- as.data.frame(scores(landcover.pca, dis="sp", choices=c(1:2))) #Species scores
+
+landcover.pca.plot<-ggplot()
+landcover.pca.plot<- landcover.pca.plot + geom_vline(x=0,colour="grey50") 
+landcover.pca.plot<- landcover.pca.plot+ geom_hline(y=0,colour="grey50") 
+landcover.pca.plot<- landcover.pca.plot + labs(x= "PC1 (34% var explained)", y= "PC2 (23% var exp)") + theme_bw()
+landcover.pca.plot<- landcover.pca.plot + geom_point(data = landcover.scores, aes(x = PC1, y = PC2), size=4) 
+landcover.pca.plot<- landcover.pca.plot + geom_text(data = landcover.sp.scores, aes(x = PC1, y = PC2, label=rownames(landcover.sp.scores)), size=6) 
+landcover.pca.plot<- landcover.pca.plot + theme(axis.text.x = element_text(colour="black", size=16))
+landcover.pca.plot<- landcover.pca.plot + theme(axis.text.y = element_text(colour="black", size=16))
+landcover.pca.plot<- landcover.pca.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+landcover.pca.plot<- landcover.pca.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+
+
 #Total temporal beta 
 temporalland.fit1<- rpart(Total_beta~PCT_DEVELOPED_BSN + PCT_FOREST_BSN + PCT_SHRUBLAND_BSN + PCT_GRASS_BSN + PCT_AGRIC_BSN + PCT_WETLAND_BSN, method="anova", data=temporalBD.landuse) 
 
@@ -2371,7 +2406,7 @@ plot(as.party(temporal.land2prune), tp_args = list(id = FALSE)) #Pruned results:
 ####PLOTS OF CERTAIN DIATOM SPECIES ABUNDANCE WITH HIGH SCBD                                     #
 ##################################################################################################
 
-##Plot abundance between historicala and 2007 sediments of diatom taxa with highest SCBD in both sediment sets. 
+##Plot abundance between historical and 2007 sediments of diatom taxa with highest SCBD in both sediment sets. 
 
 A.formosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Asterionella.formosa.Hassal, surf.diat.abund$Asterionella.formosa.Hassal))
 colnames(A.formosa) [1]<- 'SITE_ID'
@@ -2385,31 +2420,74 @@ colnames(A.ambigua) [1]<- 'SITE_ID'
 colnames(A.ambigua) [2]<- 'Hist_A.ambigua'
 colnames(A.ambigua) [3]<- 'Surf_A.ambigua'
 
+A.ambigua.long<- melt(A.ambigua, id.vars=c("SITE_ID"))
+
 D.pseudostelligera<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee, surf.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee))
 colnames(D.pseudostelligera) [1]<- 'SITE_ID'
 colnames(D.pseudostelligera) [2]<- 'Hist_D.pseudo'
 colnames(D.pseudostelligera) [3]<- 'Surf_D.pseudo'
+
+D.pseudostelligera.long<- melt(D.pseudostelligera, id.vars=c("SITE_ID"))
 
 T.flocculosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Tabellaria.flocculosa..Roth..Kützing, surf.diat.abund$Tabellaria.flocculosa..Roth..Kützing))
 colnames(T.flocculosa) [1]<- 'SITE_ID'
 colnames(T.flocculosa) [2]<- 'Hist_T.flocculosa'
 colnames(T.flocculosa) [3]<- 'Surf_T.flocculosa'
 
+T.flocculosa.long<- melt(T.flocculosa, id.vars=c("SITE_ID"))
+
 S.construens<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Staurosira.construens.Ehrenberg, surf.diat.abund$Staurosira.construens.Ehrenberg))
 colnames(S.construens) [1]<- 'SITE_ID'
 colnames(S.construens) [2]<- 'Hist_S.construens'
 colnames(S.construens) [3]<- 'Surf_S.construens'
 
+S.construens.long<- melt(S.construens, id.vars=c("SITE_ID"))
 
-
+##Plots for Supplementary info 1
 A.formosa.plot<- ggplot(A.formosa.long, aes(x=variable, y=value)) + geom_boxplot()
+A.formosa.plot<- A.formosa.plot + labs(x="Sediment type", y="Abundance (count)") 
+A.formosa.plot<- A.formosa.plot + theme_bw()
+A.formosa.plot<- A.formosa.plot + theme(axis.text.x = element_text(colour="black", size=16))
+A.formosa.plot<- A.formosa.plot + theme(axis.text.y = element_text(colour="black", size=16))
+A.formosa.plot<- A.formosa.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+A.formosa.plot<- A.formosa.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+#A.formosa.plot<- A.formosa.plot + annotate("text", x=0.5, y=450, label="(a)", size=10)
 
+A.ambigua.plot<- ggplot(A.ambigua.long, aes(x=variable, y=value)) + geom_boxplot()
+A.ambigua.plot<- A.ambigua.plot + labs(x="Sediment type", y="Abundance (count)") 
+A.ambigua.plot<- A.ambigua.plot + theme_bw()
+A.ambigua.plot<- A.ambigua.plot + theme(axis.text.x = element_text(colour="black", size=16))
+A.ambigua.plot<- A.ambigua.plot + theme(axis.text.y = element_text(colour="black", size=16))
+A.ambigua.plot<- A.ambigua.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+A.ambigua.plot<- A.ambigua.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+#A.ambigua.plot<- A.ambigua.plot + annotate("text", x=0.5, y=450, label="(b)", size=10)
 
+D.pseudostelligera.plot<- ggplot(D.pseudostelligera.long, aes(x=variable, y=value)) + geom_boxplot()
+D.pseudostelligera.plot<- D.pseudostelligera.plot + labs(x="Sediment type", y="Abundance (count)") 
+D.pseudostelligera.plot<- D.pseudostelligera.plot + theme_bw()
+D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.text.x = element_text(colour="black", size=16))
+D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.text.y = element_text(colour="black", size=16))
+D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+#D.pseudostelligera.plot<- D.pseudostelligera.plot + annotate("text", x=0.5, y=450, label="(c)", size=10)
 
+T.flocculosa.plot<- ggplot(T.flocculosa.long, aes(x=variable, y=value)) + geom_boxplot()
+T.flocculosa.plot<- T.flocculosa.plot + labs(x="Sediment type", y="Abundance (count)") 
+T.flocculosa.plot<- T.flocculosa.plot + theme_bw()
+T.flocculosa.plot<- T.flocculosa.plot + theme(axis.text.x = element_text(colour="black", size=16))
+T.flocculosa.plot<- T.flocculosa.plot + theme(axis.text.y = element_text(colour="black", size=16))
+T.flocculosa.plot<- T.flocculosa.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+T.flocculosa.plot<- T.flocculosa.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+#T.flocculosa.plot<- T.flocculosa.plot + annotate("text", x=0.5, y=450, label="(d)", size=10)
 
-
-
-
+S.construens.plot<- ggplot(S.construens.long, aes(x=variable, y=value)) + geom_boxplot()
+S.construens.plot<- S.construens.plot + labs(x="Sediment type", y="Abundance (count)") 
+S.construens.plot<- S.construens.plot + theme_bw()
+S.construens.plot<- S.construens.plot + theme(axis.text.x = element_text(colour="black", size=16))
+S.construens.plot<- S.construens.plot + theme(axis.text.y = element_text(colour="black", size=16))
+S.construens.plot<- S.construens.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+S.construens.plot<- S.construens.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+#S.construens.plot<- S.construens.plot + annotate("text", x=0.5, y=450, label="(e)", size=10)
 
 
 
