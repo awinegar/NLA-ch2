@@ -7,10 +7,10 @@
 #Previous script: Rscript_NLA2007ch2_analysesBetaDiv_V2.R
 #R version: 3.1.2 (Pumpkin Helmet)
 
-##Last update: June 4, 2015 
+##Last update: June 26, 2015 
 ##Associated workspace: workspace_NLA2007ch2_analysesBetaDiv_V3.RData 
 ##Associated markdown: 
-##Github: 
+##Github: NLA-ch2 repository 
 
 ##################################################################################################
 
@@ -1420,7 +1420,7 @@ us.map.surfLCBD<- us.map.surfLCBD + theme(axis.title.x = element_text(size = rel
 us.map.surfLCBD<- us.map.surfLCBD + theme(axis.title.y = element_text(size = rel(2), angle=90))
 us.map.surfLCBD<- us.map.surfLCBD + theme(legend.title=element_text(size=16))
 us.map.surfLCBD<- us.map.surfLCBD + theme(legend.text=element_text(size=16))
-us.map.surfLCBD<- us.map.surfLCBD + annotate("text", x=-120, y=50.5, label="(b)", size=10) #for using in a panel with other LCBD map
+us.map.surfLCBD<- us.map.surfLCBD + annotate("text", x=-118, y=51, label="(b)", size=9) #for using in a panel with other LCBD map
 
   
 
@@ -1480,14 +1480,29 @@ us.map.histLCBD<- us.map.histLCBD + theme(axis.title.x = element_text(size = rel
 us.map.histLCBD<- us.map.histLCBD + theme(axis.title.y = element_text(size = rel(2), angle=90))
 us.map.histLCBD<- us.map.histLCBD + theme(legend.title=element_text(size=16))
 us.map.histLCBD<- us.map.histLCBD + theme(legend.text=element_text(size=16))
-us.map.histLCBD<- us.map.histLCBD + annotate("text", x=-120, y=50.5, label="(a)", size=10) #for using in a panel with other LCBD map
+us.map.histLCBD<- us.map.histLCBD + annotate("text", x=-118, y=51, label="(a)", size=10) #for using in a panel with other LCBD map
 
 
 #Look at sites with significant (p<0.05)
 hist.LCBD.summary.sig<- as.data.frame(subset(hist.LCBD.summary, LCBD.P<0.05))
 
+##Make figure 3- a/b panels as spatial LCBD, panel c with exceptional sites for temporal beta diversity 
 #Combine the LCBD maps
-LCBD.combo<- grid.arrange(us.map.histLCBD, us.map.surfLCBD, nrow=2)
+LCBD.combo<- grid.arrange(us.map.histLCBD, us.map.surfLCBD, us.map.tempsig, nrow=3)
+
+#Panel c for LCBD.combo plot (using temporalBD.BCD from below)
+us.map.tempsig<- us.map + geom_point(data=temporalBD.BCD, aes(x=LONG_DD, y=LAT_DD, size=Total_beta, colour=p.adj<0.05))
+us.map.tempsig<- us.map.tempsig + scale_size(name="Temporal beta") 
+us.map.tempsig<- us.map.tempsig + labs(x="Longitude", y="Latitude") 
+us.map.tempsig<- us.map.tempsig + theme_bw()
+us.map.tempsig<- us.map.tempsig + theme(axis.text.x = element_text(colour="black", size=16))
+us.map.tempsig<- us.map.tempsig + theme(axis.text.y = element_text(colour="black", size=16))
+us.map.tempsig<- us.map.tempsig + theme(axis.title.x = element_text(size = rel(2), angle=00))
+us.map.tempsig<- us.map.tempsig + theme(axis.title.y = element_text(size = rel(2), angle=90))
+us.map.tempsig<- us.map.tempsig + theme(legend.title=element_text(size=16))
+us.map.tempsig<- us.map.tempsig + theme(legend.text=element_text(size=16))
+us.map.tempsig<- us.map.tempsig + annotate("text", x=-118, y=51, label="(c)", size=9) #for using in a panel with other LCBD maps
+
 
 
 ##Make figure 2 for manuscript, map of sites by ecoregion along with lake water quality variables
@@ -2349,6 +2364,57 @@ plot(as.party(temporal.land2prune), tp_args = list(id = FALSE)) #Pruned results:
 ##NEXT STEPS##
 #paired.diff2 with presence-absence data
 #Regression trees--> Use rpart to partition D values by land use variables 
+
+##################################################################################################
+
+##################################################################################################
+####PLOTS OF CERTAIN DIATOM SPECIES ABUNDANCE WITH HIGH SCBD                                     #
+##################################################################################################
+
+##Plot abundance between historicala and 2007 sediments of diatom taxa with highest SCBD in both sediment sets. 
+
+A.formosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Asterionella.formosa.Hassal, surf.diat.abund$Asterionella.formosa.Hassal))
+colnames(A.formosa) [1]<- 'SITE_ID'
+colnames(A.formosa) [2]<- 'Hist_A.formosa'
+colnames(A.formosa) [3]<- 'Surf_A.formosa'
+
+A.formosa.long<- melt(A.formosa, id.vars=c("SITE_ID"))
+
+A.ambigua<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Aulacoseira.ambigua..Grunow..Simonsen, surf.diat.abund$Aulacoseira.ambigua..Grunow..Simonsen))
+colnames(A.ambigua) [1]<- 'SITE_ID'
+colnames(A.ambigua) [2]<- 'Hist_A.ambigua'
+colnames(A.ambigua) [3]<- 'Surf_A.ambigua'
+
+D.pseudostelligera<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee, surf.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee))
+colnames(D.pseudostelligera) [1]<- 'SITE_ID'
+colnames(D.pseudostelligera) [2]<- 'Hist_D.pseudo'
+colnames(D.pseudostelligera) [3]<- 'Surf_D.pseudo'
+
+T.flocculosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Tabellaria.flocculosa..Roth..Kützing, surf.diat.abund$Tabellaria.flocculosa..Roth..Kützing))
+colnames(T.flocculosa) [1]<- 'SITE_ID'
+colnames(T.flocculosa) [2]<- 'Hist_T.flocculosa'
+colnames(T.flocculosa) [3]<- 'Surf_T.flocculosa'
+
+S.construens<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Staurosira.construens.Ehrenberg, surf.diat.abund$Staurosira.construens.Ehrenberg))
+colnames(S.construens) [1]<- 'SITE_ID'
+colnames(S.construens) [2]<- 'Hist_S.construens'
+colnames(S.construens) [3]<- 'Surf_S.construens'
+
+
+
+A.formosa.plot<- ggplot(A.formosa.long, aes(x=variable, y=value)) + geom_boxplot()
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##################################################################################################
 
