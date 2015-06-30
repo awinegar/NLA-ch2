@@ -7,7 +7,7 @@
 #Previous script: Rscript_NLA2007ch2_analysesBetaDiv_V2.R
 #R version: 3.1.2 (Pumpkin Helmet)
 
-##Last update: June 26, 2015 
+##Last update: June 30, 2015 
 ##Associated workspace: workspace_NLA2007ch2_analysesBetaDiv_V3.RData 
 ##Associated markdown: 
 ##Github: NLA-ch2 repository 
@@ -33,6 +33,10 @@ library(party) #Regression trees
 library(rpart.plot) #Regression trees
 library(partykit) #Regression trees
 library(tree) #Regression trees
+library(permute) #Rarefy
+library(boot) #Rarefy
+library(rich) #Rarefy
+library(Iso) #Rarefy
 
 ##Visuals 
 library(ggplot2) #Plotting 
@@ -2489,10 +2493,341 @@ S.construens.plot<- S.construens.plot + theme(axis.title.x = element_text(size =
 S.construens.plot<- S.construens.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
 #S.construens.plot<- S.construens.plot + annotate("text", x=0.5, y=450, label="(e)", size=10)
 
+##################################################################################################
+
+##################################################################################################
+####ALPHA AND GAMMA DIVERSITY                                                                    #
+##################################################################################################
+
+##################################################################################################
+####ALPHA AND GAMMA DIVERSITY                                                                    #
+##################################################################################################
+
+#Use 
+#surf.diat.abund   #quantitative data for surface diatoms (~953 species)
+#hist.diat.abund  #quantitative data for historical diatoms (~1033 species)
+
+#Add an ecoregion column for subsetting using:
+#nla.highC.surf
+#nla.highC.hist 
+
+########################This code to clean up the diatoms is not working- fix and then re-do diversity analyses
+##NOTE that could use code from Julien to parse the names and make a better cleaned up list for these species
+#if put into long form for each- should do? But check beta-diversity estimates too. 
+
+##Historical sediment diatoms
+#hist.diat.abund    #in raw form: 1031 species columns + 2 columns 
+#Rename to an object so not overwriting any other objects in the workspace
+hd.abund<- hist.diat.abund
+hd.abund<- hd.abund[,-2] #Remove column 2 ("variable" column, so only SITE_ID and species columns left)
+
+#Melt to make long
+hd.abund.long<- melt(hd.abund, id.vars = c("SITE_ID")) 
+colnames(hd.abund.long) [2] <- 'TAXANAME'
+colnames(hd.abund.long) [3] <- 'ABUND'
+
+#Now clean up species in the TAXANAME column. 
+# Create diatom dataset
+hist.taxanames <- hd.abund.long$TAXANAME
+hist.taxanames.str<-toString(hist.taxanames) #not sure about this. 
+
+## Standardize all taxanames
+# Parsing functions
+parse_tax_cf <- function(hist.taxanames.str) {
+  # Removes "cf." from taxaname
+  hist.taxanames.str <- gsub("cf..", " ", hist.taxanames.str) #Remove cf.. from names 
+  hist.taxanames.str <- gsub("cff..", " ", hist.taxanames.str) #Remove cff.. from names (don't think there are any)
+  hist.taxanames.str <- gsub("var..", " ", hist.taxanames.str) #Remove var.. from names 
+  hist.taxanames.str
+}
+parse_tax_sp <- function(hist.taxanames.str) {
+  # Combines sp, spp, sp1, etc. variants
+  hist.taxanames.str <- gsub("sp..[0-9].", " sp.", hist.taxanames.str) #Replace sp..# with sp.
+  hist.taxanames.str <- gsub("spp.", " sp.", hist.taxanames.str) #Replace spp. with sp.
+  hist.taxanames.str <- gsub("sp.[0-9].", " sp.", hist.taxanames.str) #Replace sp.# with sp. 
+  hist.taxanames.str <- gsub("spp..", " sp. ", hist.taxanames.str) #Replace spp.. with sp. 
+  hist.taxanames.str <- gsub("[?]", "", hist.taxanames.str)
+  hist.taxanames.str
+}
+# Parse taxaname function
+parse_tax <- function(hist.taxanames.str) {
+  # Combines parsing sub-functions
+  hist.taxanames.str <- parse_tax_cf(hist.taxanames.str)
+  hist.taxanames.str <- parse_tax_sp(hist.taxanames.str)
+  hist.taxanames.str
+}
+# Parse all taxanames
+hist.taxanames_new <- unlist(sapply(hist.taxanames.str, FUN = parse_tax))
+
+# Split and remake taxanames (removing non species epithets)
+split_join_tax <- function(hist.taxanames.str) {
+  split_string <- strsplit(as.character(hist.taxanames.str), " ")[[1]]
+  hist.taxanames.str <- paste(split_string[1], split_string[2], sep=".")
+  hist.taxanames.str
+}
+# Split and join taxanames
+hist.taxanames_new <- unlist(sapply(taxanames_new, FUN = split_join_tax))
+
+# Replace diatom taxanames with new taxanames
+hd.abund.long$TAXANAME <- hist.taxanames_new
+
+#Recast back into wide format
+
+##Surface sediment diatoms 
+#Would use parsing subfunctions as above but surf.taxanames 
+
+sd.abund<- surf.diat.abund
+sd.abund<- surf.abund[,-2] 
+
+#Melt to make long
+sd.abund.long<- melt(sd.abund, id.vars = c("SITE_ID")) 
+colnames(sd.abund.long) [2] <- 'TAXANAME'
+colnames(sd.abund.long) [3] <- 'ABUND'
+
+surf.taxanames <- sd.abund.long$TAXANAME
+surf.taxanames.str<-toString(hist.taxanames) 
+
+################################################
+
+##Diversity analyses steps ##RE_DO ONCE PARSING CODE FIGURED OUT ABOVE. 
+
+#Take wide-format surface and historical diatom dataframes with quantitative data and bind in ecoregion column
+#surf.diat.abund   #quantitative data for surface diatoms (~953 species) #Use for now
+#hist.diat.abund  #quantitative data for historical diatoms (~1033 species) #Use for now 
+
+#Add an ecoregion column for subsetting using:
+#nla.highC.surf
+#nla.highC.hist 
+
+surf.eco<- as.data.frame(cbind(surf.diat.abund, nla.highC.surf$WSA_ECOREGION))
+colnames(surf.eco) [954] <- 'WSA_ECOREGION'
+
+hist.eco<- as.data.frame(cbind(hist.diat.abund, nla.highC.hist$WSA_ECOREGION))
+colnames(hist.eco) [1034] <- 'WSA_ECOREGION'
+
+#Subset historical sediment dataframe into ecoregions
+hist.eco.CPL<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "CPL", drop=T))
+hist.eco.NAP<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "NAP", drop=T))
+hist.eco.SPL<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "SPL", drop=T))
+hist.eco.TPL<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "TPL", drop=T))
+hist.eco.UMW<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "UMW", drop=T))
+hist.eco.WMT<- as.data.frame(subset(hist.eco, WSA_ECOREGION == "WMT", drop=T))
+
+#Subset surface sediment dataframe into ecoregions
+surf.eco.CPL<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "CPL", drop=T))
+surf.eco.NAP<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "NAP", drop=T))
+surf.eco.SPL<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "SPL", drop=T))
+surf.eco.TPL<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "TPL", drop=T))
+surf.eco.UMW<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "UMW", drop=T))
+surf.eco.WMT<- as.data.frame(subset(surf.eco, WSA_ECOREGION == "WMT", drop=T))
+
+#Rarefied species richness for historical sediment subsets
+#All
+hist.Srar <- rarefy(hist.eco[,3:1033], min(rowSums(hist.eco[,3:1033]))) 
+hist.Srar #String
+hist.Srar<- as.data.frame(hist.Srar)
+summary(hist.Srar) #can get mean 
+
+#CPL
+hist.CPL.Srar <- rarefy(hist.eco.CPL[,3:1033], min(rowSums(hist.eco.CPL[,3:1033]))) 
+hist.CPL.Srar #String
+hist.CPL.Srar<- as.data.frame(hist.CPL.Srar)
+summary(hist.CPL.Srar) #can get mean 
+
+#NAP
+hist.NAP.Srar <- rarefy(hist.eco.NAP[,3:1033], min(rowSums(hist.eco.NAP[,3:1033])))
+hist.NAP.Srar #String
+hist.NAP.Srar<- as.data.frame(hist.NAP.Srar)
+summary(hist.NAP.Srar) #can get mean 
+
+#SPL
+hist.SPL.Srar <- rarefy(hist.eco.SPL[,3:1033], min(rowSums(hist.eco.SPL[,3:1033])))
+hist.SPL.Srar #String
+hist.SPL.Srar<- as.data.frame(hist.SPL.Srar)
+summary(hist.SPL.Srar) #can get mean 
+
+#TPL
+hist.TPL.Srar <- rarefy(hist.eco.TPL[,3:1033], min(rowSums(hist.eco.TPL[,3:1033])))
+hist.TPL.Srar #String
+hist.TPL.Srar<- as.data.frame(hist.TPL.Srar)
+summary(hist.TPL.Srar) #can get mean 
+
+#UMW
+hist.UMW.Srar <- rarefy(hist.eco.UMW[,3:1033], min(rowSums(hist.eco.UMW[,3:1033])))
+hist.UMW.Srar #String
+hist.UMW.Srar<- as.data.frame(hist.UMW.Srar)
+summary(hist.UMW.Srar) #can get mean 
+
+#WMT
+hist.WMT.Srar <- rarefy(hist.eco.WMT[,3:1033], min(rowSums(hist.eco.WMT[,3:1033])))
+hist.WMT.Srar #String
+hist.WMT.Srar<- as.data.frame(hist.WMT.Srar)
+summary(hist.WMT.Srar) #can get mean 
+
+#Rarefied species richness for surface sediment subsets 
+#All
+surf.Srar <- rarefy(surf.eco[,4:953], min(rowSums(surf.eco[,4:953]))) #extra column in front of Site_ID
+surf.Srar #String
+surf.Srar<- as.data.frame(surf.Srar)
+summary(surf.Srar) #can get mean 
+
+#CPL
+surf.CPL.Srar <- rarefy(surf.eco.CPL[,4:953], min(rowSums(surf.eco.CPL[,4:953]))) #extra column in front of Site_ID
+surf.CPL.Srar #String
+surf.CPL.Srar<- as.data.frame(surf.CPL.Srar)
+summary(surf.CPL.Srar) #can get mean 
+
+#NAP
+surf.NAP.Srar <- rarefy(surf.eco.NAP[,4:953], min(rowSums(surf.eco.NAP[,4:953]))) #extra column in front of Site_ID
+surf.NAP.Srar #String
+surf.NAP.Srar<- as.data.frame(surf.NAP.Srar)
+summary(surf.NAP.Srar) #can get mean 
+
+#SPL
+surf.SPL.Srar <- rarefy(surf.eco.SPL[,4:953], min(rowSums(surf.eco.SPL[,4:953]))) #extra column in front of Site_ID
+surf.SPL.Srar #String
+surf.SPL.Srar<- as.data.frame(surf.SPL.Srar)
+summary(surf.SPL.Srar) #can get mean 
+
+#TPL
+surf.TPL.Srar <- rarefy(surf.eco.TPL[,4:953], min(rowSums(surf.eco.TPL[,4:953]))) #extra column in front of Site_ID
+surf.TPL.Srar #String
+surf.TPL.Srar<- as.data.frame(surf.TPL.Srar)
+summary(surf.TPL.Srar) #can get mean 
+
+#UMW
+surf.UMW.Srar <- rarefy(surf.eco.UMW[,4:953], min(rowSums(surf.eco.UMW[,4:953]))) #extra column in front of Site_ID
+surf.UMW.Srar #String
+surf.UMW.Srar<- as.data.frame(surf.UMW.Srar)
+summary(surf.UMW.Srar) #can get mean 
+
+#WMT
+surf.WMT.Srar <- rarefy(surf.eco.WMT[,4:953], min(rowSums(surf.eco.WMT[,4:953]))) #extra column in front of Site_ID
+surf.WMT.Srar #String
+surf.WMT.Srar<- as.data.frame(surf.WMT.Srar)
+summary(surf.WMT.Srar) #can get mean 
 
 
+#Shannon alpha diversity for historical sediment subsets
+#All
+hist.Shannon<- diversity(hist.eco[,3:1033], index = "shannon")
+summary(hist.Shannon)
+
+#CPL
+hist.CPL.Shannon<- diversity(hist.eco.CPL[,3:1033], index = "shannon")
+summary(hist.CPL.Shannon)
+
+#NAP
+hist.NAP.Shannon<- diversity(hist.eco.NAP[,3:1033], index = "shannon")
+summary(hist.NAP.Shannon)
+
+#SPL
+hist.SPL.Shannon<- diversity(hist.eco.SPL[,3:1033], index = "shannon")
+summary(hist.SPL.Shannon)
+
+#TPL
+hist.TPL.Shannon<- diversity(hist.eco.TPL[,3:1033], index = "shannon")
+summary(hist.TPL.Shannon)
+
+#UMW
+hist.UMW.Shannon<- diversity(hist.eco.UMW[,3:1033], index = "shannon")
+summary(hist.UMW.Shannon)
+
+#WMT
+hist.WMT.Shannon<- diversity(hist.eco.WMT[,3:1033], index = "shannon")
+summary(hist.WMT.Shannon)
+
+#Shannon alpha diversity for surface sediment subsets
+#All
+surf.Shannon<- diversity(surf.eco[,4:953], index = "shannon")
+summary(surf.Shannon)
+
+#CPL
+surf.CPL.Shannon<- diversity(surf.eco.CPL[,4:953], index = "shannon")
+summary(surf.CPL.Shannon)
+
+#NAP
+surf.NAP.Shannon<- diversity(surf.eco.NAP[,4:953], index = "shannon")
+summary(surf.NAP.Shannon)
+
+#SPL
+surf.SPL.Shannon<- diversity(surf.eco.SPL[,4:953], index = "shannon")
+summary(surf.SPL.Shannon)
+
+#TPL
+surf.TPL.Shannon<- diversity(surf.eco.TPL[,4:953], index = "shannon")
+summary(surf.TPL.Shannon)
+
+#UMW
+surf.UMW.Shannon<- diversity(surf.eco.UMW[,4:953], index = "shannon")
+summary(surf.UMW.Shannon)
+
+#WMT
+surf.WMT.Shannon<- diversity(surf.eco.WMT[,4:953], index = "shannon")
+summary(surf.WMT.Shannon)
 
 
+#Simpson alpha for historical sediment subsets 
+#All
+hist.Simpson<- diversity(hist.eco[,3:1033], index = "simpson")
+summary(hist.Simpson)
+
+#CPL
+hist.CPL.Simpson<- diversity(hist.eco.CPL[,3:1033], index = "simpson")
+summary(hist.CPL.Simpson)
+
+#NAP
+hist.NAP.Simpson<- diversity(hist.eco.NAP[,3:1033], index = "simpson")
+summary(hist.NAP.Simpson)
+
+#SPL
+hist.SPL.Simpson<- diversity(hist.eco.SPL[,3:1033], index = "simpson")
+summary(hist.SPL.Simpson)
+
+#TPL
+hist.TPL.Simpson<- diversity(hist.eco.TPL[,3:1033], index = "simpson")
+summary(hist.TPL.Simpson)
+
+#UMW
+hist.UMW.Simpson<- diversity(hist.eco.UMW[,3:1033], index = "simpson")
+summary(hist.UMW.Simpson)
+
+#WMT
+hist.WMT.Simpson<- diversity(hist.eco.WMT[,3:1033], index = "simpson")
+summary(hist.WMT.Simpson)
+
+#Simpson slpha for surface sediment subsets
+#All
+surf.Simpson<- diversity(surf.eco[,4:953], index = "simpson")
+summary(surf.Simpson)
+
+#CPL
+surf.CPL.Simpson<- diversity(surf.eco.CPL[,4:953], index = "simpson")
+summary(surf.CPL.Simpson)
+
+#NAP
+surf.NAP.Simpson<- diversity(surf.eco.NAP[,4:953], index = "simpson")
+summary(surf.NAP.Simpson)
+
+#SPL
+surf.SPL.Simpson<- diversity(surf.eco.SPL[,4:953], index = "simpson")
+summary(surf.SPL.Simpson)
+
+#TPL
+surf.TPL.Simpson<- diversity(surf.eco.TPL[,4:953], index = "simpson")
+summary(surf.TPL.Simpson)
+
+#UMW
+surf.UMW.Simpson<- diversity(surf.eco.UMW[,4:953], index = "simpson")
+summary(surf.UMW.Simpson)
+
+#WMT
+surf.WMT.Simpson<- diversity(surf.eco.WMT[,4:953], index = "simpson")
+summary(surf.WMT.Simpson)
+
+
+#Gamma diversity for historical sediment subsets (Alpha-Shannon * BD)
+#Gamma diversity for surface sediment subsets 
 
 ##################################################################################################
 
