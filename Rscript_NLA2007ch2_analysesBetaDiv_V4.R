@@ -7,11 +7,33 @@
 #Previous script: Rscript_NLA2007ch2_analysesBetaDiv_V3.R
 #R version: 3.1.2 (Pumpkin Helmet)
 
-##Last update: June 30, 2015 
-##Associated workspace: NOT SAVED YET
+##Last update: July 1, 2015 
+##Associated workspace: workspace_NLA2007ch2_analysesBetaDiv_V4.RData
 ##Associated markdown: 
-##Associated .txt of R script: NOT SAVED YET
+##Associated .txt of R script: Rscript_NLA2007ch2_analysesBetaDiv_V4.txt
 ##Github: NLA-ch2 repository 
+
+##################################################################################################
+
+##################################################################################################
+####CORRECTIONS TO MAKE                                                                          #
+##################################################################################################
+
+##As of July 1, 2015- once code/decisions finalized: 
+#Remove 10 sites that are suspect in terms of dating and check for influence on results 
+#(URT figures etc. can stay- just number adjustments). 
+
+#Final grep cleaning of diatom species --> re-run for alpha/gamma/beta numbers and insert into
+#manuscript. 
+
+#Re-run of entire script with updated diatoms --> final check of all results (+replacing objects
+#in R script). Use rm() to get rid of objects not needed. 
+
+#Move all dataframes used as data input into script into repository, change file.choose() to 
+#setwd() and push to github. 
+
+#Take final code and adapt for rotifers (cleaned through network project) and soft phytoplankton 
+#(cleaned through zUSA). 
 
 ##################################################################################################
 
@@ -1087,8 +1109,6 @@ RuzickaD <- function(vec1, vec2, method="ruzicka", BCD=FALSE, ref=TRUE)
 ####DATA SET-UP                                                                                  #
 ##################################################################################################
 
-##ONCE SCRIPT FINALIZED - PUT ALL .CSV's INTO NLA-ch2 REPOSITORY SO CAN SOURCE DIRECTLY. 
-
 ####Master abiotic/site data####
 ##General data
 nla.data2<- read.csv(file.choose()) #nla2007_lakes_topbotsamples_UpdateNov2014_V2.csv
@@ -1302,7 +1322,7 @@ summary(dates.logr)
 logr.plot<- ggplot(dates.dat, aes(x=Core_height, y=Pre_1850_binary)) + geom_point() + stat_smooth(method="glm", family="binomial", se=FALSE, size=1)
 
 ##Chi-square test to test the hypothesis that age assignment is independent of core length
-ctbl<- table(dates.dat$Core_height_description, dates.dat$Pre_1850) #contingency table
+ctbl<- table(dates.dat$Core_height_description, dates.dat$Pre_1850) #contingency table #May be an issue with NAs? (fix dating.binary as.is=T)
 
 chisq.test(ctbl) #p-value = 0.9586
 #cannot reject null that core length is INDEPENDENT of pre-1850 or not
@@ -1386,7 +1406,7 @@ surf.beta.div2$p.LCBD
 
 #Look at SCBD specifically
 surf.SCBD.summary<- as.data.frame(surf.beta.div2$SCBD)
-write.csv(surf.SCBD.summary, "surf.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
+#write.csv(surf.SCBD.summary, "surf.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
 
 #Use percentage difference 
 surf.beta.div3 <- beta.div(surf.diat.abundnon[,5:954], method="percentagedifference", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
@@ -1428,7 +1448,7 @@ hist.beta.div2$p.LCBD
 
 #Look at SCBD specifically
 hist.SCBD.summary<- as.data.frame(hist.beta.div2$SCBD)
-write.csv(hist.SCBD.summary, "hist.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
+#write.csv(hist.SCBD.summary, "hist.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
 
 #Use percentage difference instead of Hellinger
 hist.beta.div3 <- beta.div(hist.diat.abundnon[,5:1035], method="percentagedifference", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
@@ -1455,7 +1475,7 @@ hist.LCBD.summary.sig<- as.data.frame(subset(hist.LCBD.summary, LCBD.P<0.05))
 ##################################################################################################
 
 ##################################################################################################
-####FIGURES RELARED TO SPATIAL BETA-DIVERSITY                                                    #
+####FIGURES RELATED TO SPATIAL BETA-DIVERSITY                                                    #
 ##################################################################################################
 
 ####Use results from beta.div to create figures for manuscript####
@@ -1569,7 +1589,7 @@ us.map.surfLCBD<- us.map.surfLCBD + theme(legend.title=element_text(size=16))
 us.map.surfLCBD<- us.map.surfLCBD + theme(legend.text=element_text(size=16))
 us.map.surfLCBD<- us.map.surfLCBD + annotate("text", x=-118, y=51, label="(b)", size=9) #for using in a panel with other LCBD map
 
-#(C) Temporal exceptional sites 
+#(C) Temporal exceptional sites #temporalBD.BCD has to be loaded first (see below). 
 us.map.tempsig<- us.map + geom_point(data=temporalBD.BCD, aes(x=LONG_DD, y=LAT_DD, size=Total_beta, colour=p.adj<0.05))
 us.map.tempsig<- us.map.tempsig + scale_size(name="Temporal beta") 
 us.map.tempsig<- us.map.tempsig + labs(x="Longitude", y="Latitude") 
@@ -1646,7 +1666,7 @@ hist.abund.bdc$part
 
 #write hist.abund.bdc to a .csv matrix so that can put pairwise comparisons into nla2007_spatialdistances_April2015.csv
 hist.D<- as.matrix(hist.abund.bdc$D)
-write.csv(hist.D, "historical_spatialbeta.csv")
+#write.csv(hist.D, "historical_spatialbeta.csv")
 
 ##For ecoregions (had to bind new columns)
 #CPL
@@ -1909,7 +1929,7 @@ colnames(temporalBD.BCD)[8]<- 'PCT_AGRIC_BSN'
 ##Code for when trying to do double access, don't use###
 #write.csv(temporalBD.BCD, "temporalBD.BCD.csv") #modified and re-read in. 
 
-fig4.dat<- read.csv(file.choose()) #temporalBD.BCD_forfig4.csv
+fig5.dat<- read.csv(file.choose()) #temporalBD.BCD_forfig4.csv
 #File path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2\Manuscript figures
 #Stacked matrix, where species loss and gainn component combined into one column called "Species_component"
 #where species gain are positive #s, species loss are negative #s. 
@@ -1974,6 +1994,8 @@ fig5c.plot<- fig5c.plot + scale_colour_brewer(type="qual", palette="Dark2", "Eco
 ##################################################################################################
 ####RELATIONSHIPS WITH SPATIAL AND ENVIRONMENTAL DISTANCE AND BETA-DIVERSITY                     #
 ##################################################################################################
+
+##NEED TO CHECK THIS SECTION. 
 
 ####Relationship between spatial distance and environmental heterogeneity- across whole landscape####
 km.env<- lm(Env_distance_bray~km_between, data=dist.data) #Need to actually go through the linear model. 
@@ -2074,6 +2096,9 @@ surfbeta.histbeta.plot<- surfbeta.histbeta.plot + theme(axis.title.y = element_t
 
 ####Making URTs with LCBD and temporal BD for water quality and land cover variables####
 ##Surface LCBD and water quality
+surf.LCBD.env<- as.data.frame(cbind(surf.LCBD.summary, waterqual.dat.red[,2:8], nla.highC.surf$ORIGIN))
+colnames(surf.LCBD.env)[14]<- 'ORIGIN'  #though only a few man-made, majority are natural. 
+
 surf.fit2<- rpart(LCBD~ORIGIN + WSA_ECOREGION + LONG_DD + LAT_DD + SECMEAN + CHLA + PTL + NTL + MEAN_T + COND + PH_FIELD, method="anova", data=surf.LCBD.env)
 printcp(surf.fit2) #Variables actually used in construction: Chla, Cond, Lat_DD, Long_DD, Mean temp, TN, TP, Secchi
 plot(surf.fit2)
@@ -2088,6 +2113,8 @@ rsq.rpart(surf.fit2prune)  # visualize cross-validation result
 1-surf.fit2$cptable[7,3]   #column 3, row 7 in cptable --> this gives you the adjusted R2 of the model. 
 
 ##Surface LCBD and land cover
+surf.LCBD.land<- as.data.frame(cbind(surf.LCBD.summary, nla.highC.surf[,25:42]))
+
 surf.fit3<-  rpart(LCBD~PCT_DEVELOPED_BSN + PCT_BARREN_BSN + PCT_FOREST_BSN + PCT_AGRIC_BSN + PCT_WETLAND_BSN, method="anova", data=surf.LCBD.land)
 printcp(surf.fit3) #Variables actually used in construction: AGRIC, DEVELOPED, FOREST, WETLAND
 plot(surf.fit3)
@@ -2141,6 +2168,8 @@ summary(temporal.land2prune)
 ##################################################################################################
 ####URT FIGURES                                                                                  #
 ##################################################################################################
+
+##NEED TO CHECK THIS SECTION- FOR CONSISTENCY WITH OTHER RESULTS. 
 
 ####Using URT results to make rough figures for manuscript####
 ##FIGURE 4, LCBD trees
@@ -2277,6 +2306,7 @@ landcover.pca.plot<- landcover.pca.plot + theme(axis.title.y = element_text(size
 ####ALPHA AND GAMMA DIVERSITY                                                                    #
 ##################################################################################################
 
+####Ongoing calculations of alpha and gamma diversity####
 #Use 
 #surf.diat.abund   #quantitative data for surface diatoms (~953 species)
 #hist.diat.abund  #quantitative data for historical diatoms (~1033 species)
@@ -2600,5 +2630,51 @@ surf.WMT.Simpson<- diversity(surf.eco.WMT[,4:953], index = "simpson")
 summary(surf.WMT.Simpson)
 
 
-#Gamma diversity for historical sediment subsets (Alpha-Shannon * BD)
+#Gamma diversity for historical sediment subsets (Alpha-Shannon * BD) #so do not need to compute. 
 #Gamma diversity for surface sediment subsets 
+
+##################################################################################################
+
+##################################################################################################
+####URTs WITH ALPHA DIVERSITY                                                                    #
+##################################################################################################
+
+####Use alpha diversity from surface sediments as a responese variable and do URTs with land cover and water quality####
+surf.Shannon
+
+surf.Shannon.dframe<- as.data.frame(surf.Shannon)
+
+#Water quality
+surf.Shannon.env<- as.data.frame(cbind(surf.Shannon.dframe, waterqual.dat.red[,2:8])) #Didn't include latitude, ecoregion etc. 
+surf.shannon.env2<- rpart(surf.Shannon~SECMEAN + CHLA + PTL + NTL + MEAN_T + COND + PH_FIELD, method="anova", data=surf.Shannon.env) 
+printcp(surf.shannon.env2) #Variables actually used in construction: Cond, Mean_T, NTL, pH, PTL, Secchi
+plot(surf.shannon.env2)
+summary(surf.shannon.env2)
+surf.shannonenvprune<-  prune(surf.shannon.env2, cp=surf.shannon.env2$cptable[which.min(surf.shannon.env2$cptable[,"xerror"]),"CP"])
+summary(surf.shannonenvprune)
+
+par(mfrow=c(1,2)) 
+rsq.rpart(surf.shannonenvprune)  # visualize cross-validation result
+#R2 is 1-Rel Error
+# R2      
+1-surf.shannonenvprune$cptable[2,3]   #column 3, row 2 in cptable --> this gives you the adjusted R2 of the model. 
+#0.15
+plot(as.party(surf.shannonenvprune), tp_args = list(id = FALSE))
+
+#Land cover
+surf.Shannon.land<- as.data.frame(cbind(surf.Shannon.dframe, nla.highC.surf[,25:42]))
+surf.shannon.land2<-  rpart(surf.Shannon~PCT_DEVELOPED_BSN + PCT_BARREN_BSN + PCT_FOREST_BSN + PCT_AGRIC_BSN + PCT_WETLAND_BSN, method="anova", data=surf.Shannon.land)
+printcp(surf.shannon.land2) #Variables actually used in construction: AGRIC, BARREN, DEVELOPED, FOREST, WETLAND
+plot(surf.shannon.land2)
+summary(surf.shannon.land2)
+surf.shannonlandprune<-  prune(surf.shannon.land2, cp=surf.shannon.land2$cptable[which.min(surf.shannon.land2$cptable[,"xerror"]),"CP"])
+summary(surf.shannonlandprune)
+
+par(mfrow=c(1,2)) 
+rsq.rpart(surf.shannonlandprune)  # visualize cross-validation result
+#R2 is 1-Rel Error
+# R2      
+1-surf.shannonlandprune$cptable[8,3]   #column 3, row 8 in cptable --> this gives you the adjusted R2 of the model. 
+#0.33
+plot(as.party(surf.shannonlandprune), tp_args = list(id = FALSE))
+##################################################################################################
