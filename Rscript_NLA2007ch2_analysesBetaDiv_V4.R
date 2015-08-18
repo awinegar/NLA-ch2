@@ -7,9 +7,9 @@
 #Previous script: Rscript_NLA2007ch2_analysesBetaDiv_V3.R
 #R version: 3.1.2 (Pumpkin Helmet)
 
-##Last update: July 1, 2015 
+##Last update: August 18, 2015 
 ##Associated workspace: workspace_NLA2007ch2_analysesBetaDiv_V4.RData
-##Associated markdown: 
+##Associated markdown: #ADD IN A MARKDOWN FILE WITH DESCRIPTIONS OF EACH SECTION. 
 ##Associated .txt of R script: Rscript_NLA2007ch2_analysesBetaDiv_V4.txt
 ##Github: NLA-ch2 repository 
 
@@ -18,6 +18,8 @@
 ##################################################################################################
 ####CORRECTIONS TO MAKE                                                                          #
 ##################################################################################################
+
+##REMOVE THIS SECTION OR CHANGE TO REFLECT CHANGES ONCE CORRECTIONS MADE. 
 
 ##As of July 1, 2015- once code/decisions finalized: 
 #Remove 10 sites that are suspect in terms of dating and check for influence on results 
@@ -58,6 +60,7 @@ library(permute) #For rarefied richness
 library(boot) #For rarefied richness
 library(rich) #For rarefied richness
 library(Iso) #For rarefied richness
+library(corrplot) #Correlation matrices 
 
 ##Visuals 
 library(ggplot2) #Plotting 
@@ -1114,16 +1117,53 @@ RuzickaD <- function(vec1, vec2, method="ruzicka", BCD=FALSE, ref=TRUE)
 nla.data2<- read.csv(file.choose()) #nla2007_lakes_topbotsamples_UpdateNov2014_V2.csv
 #McGill/PhD Chapters and projects/EPA National lakes assessment/Chapter 2/ NLA data
 #Only cores greater than 30cm (249, 186 of those High confidence)
-#10 cores that could potentially have been excluded due to radiometric dating results are still included here. 
+#14 cores that could potentially have been excluded due to radiometric dating results are still in this .csv.  
 
 ##Subsetting of data required for matching/merging dataframes
 
-#In nla.data2 --> retain only high confidence cores
+##In nla.data2 --> retain only high confidence cores
 nla.data2.highC<- subset(nla.data2, HIGH_C_CORE == "YES", drop=T) #372 rows (186 top, 186 bottom)
 
 #In nla.data2.highC --> subset into surface and historical sediments 
 nla.highC.surf<- subset(nla.data2.highC, SED_TYPE == "Surface") #Surface/top sediments #186
 nla.highC.hist<- subset(nla.data2.highC, SED_TYPE == "Historical") #Historical/bottom sediments #186
+
+##For each of these subsets- add in column with the 2012 lake type re-classification (adding onto end of the dataframes)
+nla.highC.surf #surface, 186 sites, 63 variables 
+nla.highC.hist #historical, 186 sites, 63 variables 
+new.classes<- read.csv(file.choose()) #nla2007_comparelakeclasses.csv
+#McGill/PhD Chapters and projects/EPA National lakes assessment/Chapter 2/ NLA data
+
+#Make sure new.classes is in same order as nla.highC.surf and nla.highC.hist 
+new.classes<- as.data.frame(match(rownames(new.classes), row.names(nla.highC.surf)))
+
+#Define rownames for these datasets. 
+rownames(nla.highC.surf)<- as.character(nla.highC.surf[,1])
+rownames(nla.highC.hist)<- as.character(nla.highC.hist[,1])
+rownames(new.classes)<- as.character(new.classes[,1])
+
+#Order new.classes by nla.highC.surf and .hist
+new.classes<-new.classes[match(nla.highC.surf[,1], new.classes[,1]),]
+
+#Add 'LAKE_TYPE_RECLASSED_NAME' from new.classes 
+nla.highC.surf<- as.data.frame(cbind(nla.highC.surf, new.classes$LAKE_TYPE_RECLASSED_NAME)) #now 64 variables
+colnames(nla.highC.surf)[64]<- 'LAKE_TYPE_RECLASSED'
+
+nla.highC.hist<- as.data.frame(cbind(nla.highC.hist, new.classes$LAKE_TYPE_RECLASSED_NAME)) #now 64 variables
+colnames(nla.highC.hist)[64]<- 'LAKE_TYPE_RECLASSED'
+
+##Remove 7 additional sites that were flagged from radiometric dating from both nla.highC.surf and .hist 
+#Remove: NLA06608-2162, NLA06608-0753, NLA06608-0050, NLA06608-1414, NLA06608-0805, NLA06608-NELP-1041, 
+#NLA06608-ELS:1E1-096
+
+remove.list<- c("NLA06608-2162", "NLA06608-0753", "NLA06608-0050", "NLA06608-1414", "NLA06608-0805", "NLA06608-NELP-1041", "NLA06608-ELS:1E1-096")
+
+#Remove from nla.highC.surf- now have 64 columns (variables) and 179 sites 
+nla.highC.surf<- nla.highC.surf[ !(rownames(nla.highC.surf) %in% remove.list),]
+
+#Remove from nla.highC.hist- now have 64 columns (variables) and 179 sites 
+nla.highC.hist<- nla.highC.hist[ !(rownames(nla.highC.hist) %in% remove.list),]
+
 
 ####Add water quality data#### 
 ##Extract water quality data columns: 
@@ -1131,8 +1171,8 @@ extradat2<- read.csv(file.choose()) #Beaulieu&Taranu2014_NLAdataset.csv
 #File path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2
 #All visit 1
 
-#Keep only SECMEAN, CHLA, PTL, NTL, MEAN_T, COND, PH_FIELD
-waterqual.dat<- as.data.frame(subset(extradat2, select=c("SITE_ID", "SECMEAN", "CHLA", "PTL", "NTL", "MEAN_T", "COND", "PH_FIELD")))
+#Keep only SECMEAN, CHLA, PTL, NTL, MEAN_T, COND, PH_FIELD, ELEV_PT
+waterqual.dat<- as.data.frame(subset(extradat2, select=c("SITE_ID", "SECMEAN", "CHLA", "PTL", "NTL", "MEAN_T", "COND", "PH_FIELD", "ELEV_PT")))
 
 #Remove sites from waterqual.dat that aren't in nla.highC.surf (using surface as template)
 waterqual.dat.selected<- (waterqual.dat$SITE_ID %in% nla.highC.surf$SITE_ID)
@@ -1144,7 +1184,7 @@ waterqual.dat.red<- waterqual.dat.red[ order(match(waterqual.dat.red$SITE_ID, nl
 
 #Add WSA_ECOREGION
 waterqual.dat.red<- as.data.frame(cbind(waterqual.dat.red, nla.highC.surf$WSA_ECOREGION))
-colnames(waterqual.dat.red)[9]<- 'WSA_ECOREGION'
+colnames(waterqual.dat.red)[10]<- 'WSA_ECOREGION'
 
 ####Spatial distances between sites#### 
 ##Use latitude and longitude from nla.highC.surf $LONG_DD, $LAT_DD
@@ -1186,7 +1226,7 @@ colnames(waterqual.scores)[1]<- 'SITE_ID'
 
 #Site by site matrix for environmental distance for the waterqual.scores dataframe. 
 waterqual.dist<- vegdist(waterqual.scores[,2:3], method="bray") #Base dissimilarities on PC1 and PC2 columns
-#best choice of dissimilarity metric? Bray for now. NEED TO DECIDE ON THIS. ISSUE WITH NEGATIVE ENTRIES?
+#best choice of dissimilarity metric?
 
 #write.csv(as.matrix(waterqual.dist), "waterqual.dist.csv")
 #I used this to fill in nla2007_spatialdistances_April2015.csv 
@@ -1197,7 +1237,7 @@ dist.data<- read.csv(file.choose()) #nla2007_spatialdistances_April2015.csv
 hist(dist.data$km_between) #Spatial distances between sites 
 hist(dist.data$Env_distance_bray) #Environmental distances between sites 
 
-##Make a clean PCA plot for manuscript Supplementary data 2
+##Make a clean PCA plot for manuscript Supplementary data 2 #REPLACE OLD FIGURE (n = 179 now)
 watqual.pca.plot<-ggplot()
 watqual.pca.plot<- watqual.pca.plot + geom_vline(x=0,colour="grey50") 
 watqual.pca.plot<- watqual.pca.plot+ geom_hline(y=0,colour="grey50") 
@@ -1209,24 +1249,31 @@ watqual.pca.plot<- watqual.pca.plot + theme(axis.text.y = element_text(colour="b
 watqual.pca.plot<- watqual.pca.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
 watqual.pca.plot<- watqual.pca.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
 
+##Correlation matrix of abiotic and water-column variables. 
+waterqual.dat.red
+
+abiotic.cor<-cor(waterqual.dat.red[,2:9])
+corrplot(abiotic.cor, method="number") 
+corrplot(abiotic.cor, method="circle") 
+
+
 ####Presence-absence diatoms#### 
 ##Diatom data
 nla.diat<- read.csv(file.choose()) #combo.red30highC.diatoms_matchedpa_FIXED.csv
 #File path: McGill/PhD Chapters and projects/EPA National lakes assessment/Chapter 2/ NLA data/ Files for analysesNov2014Rscript
 
-#In nla.data2.highC --> subset into surface and historical sediments 
-nla.highC.surf<- subset(nla.data2.highC, SED_TYPE == "Surface") #Surface/top sediments #186
-nla.highC.hist<- subset(nla.data2.highC, SED_TYPE == "Historical") #Historical/bottom sediments #186
-
 #In nla.diat --> subset into surface and historical sediments 
 nla.diat.surf<- subset(nla.diat, SED_TYPE == "Surface") #Surface/top sediments #186 
+rownames(nla.diat.surf)<- as.character(nla.diat.surf[,1])
 nla.diat.hist<- subset(nla.diat, SED_TYPE == "Historical") #Historical/bottom sediments #186
+rownames(nla.diat.hist)<- as.character(nla.diat.hist[,1])
 
 ##Surface diatoms 
-#In nla.diat.surf --> retain only sites (rows) found in nla.highC.surf
-#Think that they might actually match already- check. 
+#In nla.diat.surf --> retain only sites (rows) found in nla.highC.surf (now down to 179)
+#Remove the same sites as removed from nla.highC.surf
+nla.diat.surf<- nla.diat.surf[ !(rownames(nla.diat.surf) %in% remove.list),]
 #Sites in nla.diat.surf that are found in nla.highC.surf
-surf.check<- (nla.diat.surf$SITE_ID %in% nla.highC.surf$SITE_ID) #All match
+surf.check<- (nla.diat.surf$SITE_ID %in% nla.highC.surf$SITE_ID) #All match- now n=179 for surface diatoms. 
 
 #Add MY_SAMPLE_ID column to the diatom file
 #Add WSA_ECOREGION column to the diatom file
@@ -1252,9 +1299,10 @@ colnames(nla.diat.surf)[1251]<- 'LAT_DD'
 
 ##Historical diatoms 
 #In nla.diat.hist --> retain only sites (rows) found in nla.highC.hist
-#Think that they might actually match already- check. 
+#Remove the same sites as removed from nla.highC.hist
+nla.diat.hist<- nla.diat.hist[ !(rownames(nla.diat.hist) %in% remove.list),]
 #Sites in nla.diat.surf that are found in nla.highC.surf
-hist.check<- (nla.diat.hist$SITE_ID %in% nla.highC.hist$SITE_ID) #All match 
+hist.check<- (nla.diat.hist$SITE_ID %in% nla.highC.hist$SITE_ID) #All match, now historical sediments with n=179
 
 #Add MY_SAMPLE_ID column to the diatom file
 #Add WSA_ECOREGION column to the diatom file
@@ -1277,6 +1325,89 @@ colnames(nla.diat.hist)[1251]<- 'LAT_DD'
 #[,1250]: LONG_DD
 #[,1251]: LAT_DD
 #So will be able to subsample the diatom files based on ecoregion later on. 
+
+
+
+
+
+
+
+
+
+####HAVING TROUBLE WITH THIS- WILL TRY TO FIX MANUALLY
+#Working on combo.red30highC.diatoms_matchedpa_FIXED.csv --> _CLEAN
+####Presence absence diatoms - Clean up and aggregation####
+nla.diat.surf #179 sites, 1247 species 
+nla.diat.hist #179 sites, 1247 species
+#Note: species the same because stacked matrix for combined historical and surface, then subsetted into individual dataframes. 
+
+##Surface diatoms presence absence- Note: could have done this on dataframe prior to subsetting. 
+#Call this object nla.diat.surf.PACLEAN --> if end up using, replace in downstream analyses. 
+nla.diat.surf.PACLEAN<- nla.diat.surf #n=179, 1251 species 
+
+#Melt to make long
+nla.diat.surf.PACLEAN.long<- melt(nla.diat.surf.PACLEAN, id.vars = c("SITE_ID", "SED_TYPE", "MY_SAMPLE_ID", "WSA_ECOREGION", "LONG_DD", "LAT_DD")) #add other id.vars
+colnames(nla.diat.surf.PACLEAN.long) [7]<- 'TAXANAME'
+colnames(nla.diat.surf.PACLEAN.long) [8]<- 'PA'
+
+#Clean up species in the TAXANAME column
+#Create diatom string
+surf.taxanames<- nla.diat.surf.PACLEAN.long$TAXANAME
+#surf.taxanames.str<- toString(surf.taxanames)
+
+#Standardize taxanames 
+parse_tax_cf <- function(taxaname) {
+  # Removes "cf." from taxaname
+  taxaname <- gsub(" cf. ", " ", taxaname)
+  taxaname <- gsub(" cff. ", " ", taxaname)
+  taxaname
+}
+
+parse_tax_sp <- function(taxaname) {
+  # Combines sp, spp, sp1, etc. variants
+  taxaname <- gsub(" sp. [0-9]", " sp.", taxaname)
+  taxaname <- gsub(" spp.", " sp.", taxaname)
+  taxaname <- gsub(" sp.[0-9]", " sp.", taxaname)
+  taxaname <- gsub("[?]", "", taxaname)
+  taxaname
+}
+
+# Parse taxaname function
+parse_tax <- function(taxaname) {
+  # Combines parsing sub-functions
+  taxaname <- parse_tax_cf(taxaname)
+  taxaname <- parse_tax_sp(taxaname)
+  taxaname
+}
+# Parse all taxanames
+surf.taxanames_new <- unlist(sapply(surf.taxanames, FUN = parse_tax))
+
+# Split and remake taxanames (removing non species epithets)
+split_join_tax <- function(taxaname) {
+  split_string <- strsplit(as.character(taxaname), " ")[[1]]
+  taxaname <- paste(split_string[1], split_string[2], sep=".")
+  taxaname
+}
+# Split and join taxanames
+surf.taxanames_new <- unlist(sapply(surf.taxanames_new, FUN = split_join_tax))
+
+# Replace diatom taxanames with new taxanames
+nla.diat.surf.PACLEAN.long$TAXANAME <- surf.taxanames_new
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ####Quantitative diatoms#### 
 ##Surface diatoms 
