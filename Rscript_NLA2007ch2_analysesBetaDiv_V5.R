@@ -1175,8 +1175,8 @@ extradat2<- read.csv("Beaulieu&Taranu2014_NLAdataset.csv") #Beaulieu&Taranu2014_
 #File path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2
 #All visit 1
 
-#Keep only SECMEAN, CHLA, PTL, NTL, MEAN_T, COND, PH_FIELD, ELEV_PT
-waterqual.dat<- as.data.frame(subset(extradat2, select=c("SITE_ID", "SECMEAN", "CHLA", "PTL", "NTL", "MEAN_T", "COND", "PH_FIELD", "ELEV_PT")))
+#Keep only SECMEAN, CHLA, PTL, NTL, MEAN_T, COND, PH_FIELD, ELEV_PT and Silica
+waterqual.dat<- as.data.frame(subset(extradat2, select=c("SITE_ID", "SECMEAN", "CHLA", "PTL", "NTL", "MEAN_T", "COND", "PH_FIELD", "ELEV_PT", "SIO2")))
 
 #Remove sites from waterqual.dat that aren't in nla.highC.surf (using surface as template)
 waterqual.dat.selected<- (waterqual.dat$SITE_ID %in% nla.highC.surf$SITE_ID)
@@ -1188,7 +1188,7 @@ waterqual.dat.red<- waterqual.dat.red[ order(match(waterqual.dat.red$SITE_ID, nl
 
 #Add WSA_ECOREGION
 waterqual.dat.red<- as.data.frame(cbind(waterqual.dat.red, nla.highC.surf$WSA_ECOREGION))
-colnames(waterqual.dat.red)[10]<- 'WSA_ECOREGION'
+colnames(waterqual.dat.red)[11]<- 'WSA_ECOREGION'
 
 ####Spatial distances between sites#### 
 ##Use latitude and longitude from nla.highC.surf $LONG_DD, $LAT_DD
@@ -1211,7 +1211,7 @@ waterqual.dat.red$SECMEAN[is.na(waterqual.dat.red$SECMEAN)] <- median(waterqual.
 
 #PCA
 rownames(waterqual.dat.red)<- as.character(waterqual.dat.red[,1])
-waterqual.pca<- rda(decostand(waterqual.dat.red[,2:8], method="standardize"))
+waterqual.pca<- rda(decostand(waterqual.dat.red[,2:9], method="standardize"))
 summary(waterqual.pca)
 #Take a look at the biplot
 plot(waterqual.pca, dis=c("sp", "sites"))
@@ -1256,7 +1256,7 @@ watqual.pca.plot<- watqual.pca.plot + theme(axis.title.y = element_text(size = r
 ##Correlation matrix of abiotic and water-column variables. 
 waterqual.dat.red
 
-abiotic.cor<-cor(waterqual.dat.red[,2:9])
+abiotic.cor<-cor(waterqual.dat.red[,2:10])
 corrplot(abiotic.cor, method="number") 
 corrplot(abiotic.cor, method="circle") 
 
@@ -1650,7 +1650,7 @@ us.map.histLCBD<- us.map + geom_point(data=hist.LCBD.summary, aes(x=LONG_DD, y=L
 us.map.histLCBD<- us.map.histLCBD + scale_size(name="LCBD") 
 #us.map.histLCBD<- us.map.histLCBD + ggtitle("Historical LCBD")
 #Map of LCBD values across landscape highlighting sites that make a SIGNIFICANT (p<0.05) contribution to BD. 
-us.map.histLCBD<- us.map.histLCBD + labs(x="Longitude", y="Latitude") 
+us.map.histLCBD<- us.map.histLCBD + labs(x="Longitude (DD)", y="Latitude (DD)") 
 us.map.histLCBD<- us.map.histLCBD + theme_bw()
 us.map.histLCBD<- us.map.histLCBD + theme(axis.text.x = element_text(colour="black", size=16))
 us.map.histLCBD<- us.map.histLCBD + theme(axis.text.y = element_text(colour="black", size=16))
@@ -1658,14 +1658,16 @@ us.map.histLCBD<- us.map.histLCBD + theme(axis.title.x = element_text(size = rel
 us.map.histLCBD<- us.map.histLCBD + theme(axis.title.y = element_text(size = rel(2), angle=90))
 us.map.histLCBD<- us.map.histLCBD + theme(legend.title=element_text(size=16))
 us.map.histLCBD<- us.map.histLCBD + theme(legend.text=element_text(size=16))
-us.map.histLCBD<- us.map.histLCBD + annotate("text", x=-118, y=51, label="(a)", size=10) #for using in a panel with other LCBD map
+us.map.histLCBD<- us.map.histLCBD + annotate("text", x=-116, y=51, label="(a) Historical LCBD", size=10) #for using in a panel with other LCBD map
+#us.map.histLCBD<- us.map.histLCBD + theme(legend.position="none")
+us.map.histLCBD<- us.map.histLCBD + theme(legend.position="bottom")
 
 #(B) Surface (2007) LCBD
 us.map.surfLCBD<- us.map + geom_point(data=surf.LCBD.summary, aes(x=LONG_DD, y=LAT_DD, size=LCBD, colour=LCBD.P<0.05))
 us.map.surfLCBD<- us.map.surfLCBD + scale_size(name="LCBD") 
 #us.map.surfLCBD<- us.map.surfLCBD + ggtitle("2007 LCBD")
 #Map of LCBD values across landscape highlighting sites that make a SIGNIFICANT (p<0.05) contribution to BD. 
-us.map.surfLCBD<- us.map.surfLCBD + labs(x="Longitude", y="Latitude") 
+us.map.surfLCBD<- us.map.surfLCBD + labs(x="Longitude (DD)", y="") 
 us.map.surfLCBD<- us.map.surfLCBD + theme_bw()
 us.map.surfLCBD<- us.map.surfLCBD + theme(axis.text.x = element_text(colour="black", size=16))
 us.map.surfLCBD<- us.map.surfLCBD + theme(axis.text.y = element_text(colour="black", size=16))
@@ -1673,12 +1675,14 @@ us.map.surfLCBD<- us.map.surfLCBD + theme(axis.title.x = element_text(size = rel
 us.map.surfLCBD<- us.map.surfLCBD + theme(axis.title.y = element_text(size = rel(2), angle=90))
 us.map.surfLCBD<- us.map.surfLCBD + theme(legend.title=element_text(size=16))
 us.map.surfLCBD<- us.map.surfLCBD + theme(legend.text=element_text(size=16))
-us.map.surfLCBD<- us.map.surfLCBD + annotate("text", x=-118, y=51, label="(b)", size=9) #for using in a panel with other LCBD map
+us.map.surfLCBD<- us.map.surfLCBD + annotate("text", x=-116, y=51, label="(b) Modern LCBD", size=9) #for using in a panel with other LCBD map
+#us.map.surfLCBD<- us.map.surfLCBD + theme(legend.position="none")
+us.map.surfLCBD<- us.map.surfLCBD + theme(legend.position="bottom")
 
 #(C) Temporal exceptional sites #temporalBD.BCD has to be loaded first (see below). 
 us.map.tempsig<- us.map + geom_point(data=temporalBD.BCD, aes(x=LONG_DD, y=LAT_DD, size=Total_beta, colour=p.adj<0.05))
 us.map.tempsig<- us.map.tempsig + scale_size(name="Temporal beta") 
-us.map.tempsig<- us.map.tempsig + labs(x="Longitude", y="Latitude") 
+us.map.tempsig<- us.map.tempsig + labs(x="Longitude (DD)", y="") 
 us.map.tempsig<- us.map.tempsig + theme_bw()
 us.map.tempsig<- us.map.tempsig + theme(axis.text.x = element_text(colour="black", size=16))
 us.map.tempsig<- us.map.tempsig + theme(axis.text.y = element_text(colour="black", size=16))
@@ -1686,10 +1690,19 @@ us.map.tempsig<- us.map.tempsig + theme(axis.title.x = element_text(size = rel(2
 us.map.tempsig<- us.map.tempsig + theme(axis.title.y = element_text(size = rel(2), angle=90))
 us.map.tempsig<- us.map.tempsig + theme(legend.title=element_text(size=16))
 us.map.tempsig<- us.map.tempsig + theme(legend.text=element_text(size=16))
-us.map.tempsig<- us.map.tempsig + annotate("text", x=-118, y=51, label="(c)", size=9) #for using in a panel with other LCBD maps
+us.map.tempsig<- us.map.tempsig + annotate("text", x=-118, y=51, label="(c) TBI", size=9) #for using in a panel with other LCBD maps
+us.map.tempsig<- us.map.tempsig + theme(legend.position="bottom")
 
 ##Combo panel for figure 3
-LCBD.combo<- grid.arrange(us.map.histLCBD, us.map.surfLCBD, us.map.tempsig, nrow=3)
+#Make this figure in several steps
+#Plot of Historical and Surface LCBD without legends - export 
+LCBD.combo<- grid.arrange(us.map.histLCBD, us.map.surfLCBD, nrow=1)
+
+#Plot with bottom legend - export so can just use legend
+LCBD.combo<- grid.arrange(us.map.histLCBD, us.map.surfLCBD, nrow=1) #run with legend.position = "bottom" 
+
+#Plot of TBI with bottom legend - export
+
 
 ##################################################################################################
 
@@ -1963,9 +1976,9 @@ temp.D2quant.summary<- as.data.frame(ddply(temp.D2quant.mat3, "WSA_ECOREGION", s
 
 ##################################################################################################
 
-##################################################################################################
-####FINDING SIGNIFICANT SITES IN TEMPORAL BETA-DIVERSITY (paired.diff2 FUNCTION)                 #
-##################################################################################################
+#######################################################################################################################
+####FINDING SIGNIFICANT SITES IN TEMPORAL BETA-DIVERSITY (paired.diff2 FUNCTION) - RECHECKED, EXCEPT FINAL FIGURE FILE#
+#######################################################################################################################
 
 ####Using paired.diff2_2.R to look for exceptional sites in temporal beta diversity####
 ##Using percentage difference on abundance data, testing the different permutation options.
@@ -2018,6 +2031,7 @@ colnames(temporalBD.BCD)[9]<- 'LAKE_TYPE_RECLASSED'
 ##Code for when trying to do double access, don't use###
 #write.csv(temporalBD.BCD, "temporalBD.BCD.csv") #modified and re-read in. 
 
+#HAVE NOT LOADED BACK IN- as of Nov. 3, 2015
 fig5.dat<- read.csv(file.choose()) #temporalBD.BCD_forfig4.csv
 #File path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2\Manuscript figures
 #Stacked matrix, where species loss and gainn component combined into one column called "Species_component"
@@ -2038,6 +2052,9 @@ fig5.dat<- read.csv(file.choose()) #temporalBD.BCD_forfig4.csv
 #Species loss component (B)-Adjusted P-value
 temporalB2.logr <- glm(p.adj.binary ~ Species_loss_component, data=temporalBD.BCD, family=binomial(link="logit"))
 summary(temporalB2.logr)
+
+#Estimated logistic regression equation
+#would need to use glm? 
 temporalB2logr.plot<- ggplot(temporalBD.BCD, aes(x=Species_loss_component, y=p.adj.binary)) + geom_point() + stat_smooth(method="glm", family="binomial", se=FALSE, size=1)
 temporalB2logr.plot<- temporalB2logr.plot + labs(x="Species loss component", y="Significance of BD") 
 temporalB2logr.plot<- temporalB2logr.plot + theme_bw()
@@ -2078,7 +2095,8 @@ fig5c.plot<- fig5c.plot + theme(axis.title.y = element_text(size = rel(2), angle
 fig5c.plot<- fig5c.plot + annotate("text", x=0.27, y=0.35, label="(c)", size=10)
 fig5c.plot<- fig5c.plot + theme(legend.title=element_text(size=16))
 fig5c.plot<- fig5c.plot + theme(legend.text=element_text(size=16))
-fig5c.plot<- fig5c.plot + scale_colour_brewer(type="qual", palette="Dark2", "Ecoregion (WSA)", breaks=c("CPL", "NAP", "NPL", "SPL", "TPL", "UMW", "WMT", "XER"), labels=c("Coastal Plains", "N. Appalachians", "N. Plains", "S. Plains", "Temperate Plains", "Upper MidWest", "W. Mountains", "Xeric"))  
+fig5c.plot<- fig5c.plot + scale_colour_brewer(type="qual", palette="Dark2", "Ecoregion (WSA)", breaks=c("CPL", "NAP", "NPL", "SPL", "TPL", "UMW", "WMT", "XER"), labels=c("CPL", "NAP", "NPL", "SPL", "TPL", "UMW", "WMT", "XER"))  
+fig5c.plot<- fig5c.plot + theme(legend.position = "bottom")
 
 ##################################################################################################
 
@@ -2086,7 +2104,7 @@ fig5c.plot<- fig5c.plot + scale_colour_brewer(type="qual", palette="Dark2", "Eco
 ####RELATIONSHIPS WITH SPATIAL AND ENVIRONMENTAL DISTANCE AND BETA-DIVERSITY                     #
 ##################################################################################################
 
-##NEED TO CHECK THIS SECTION. ##NOT EDITED FOR V4. 
+##NEED TO CHECK THIS SECTION. ##NOT EDITED FOR V4/5. 
 
 ####Relationship between spatial distance and environmental heterogeneity- across whole landscape####
 km.env<- lm(Env_distance_bray~km_between, data=dist.data) #Need to actually go through the linear model. 
@@ -2275,7 +2293,7 @@ plot(as.party(surf.fit3prune), tp_args = list(id = FALSE))
 plot(as.party(temporal.land1prune), tp_args = list(id = FALSE)) #Pruned results only in forest
 
 #(6B)- Species gain component and land cover 
-plot(as.party(temporal.land2prune), tp_args = list(id = FALSE)) #Pruned results: forest, shurbland, wetland
+#plot(as.party(temporal.land2prune), tp_args = list(id = FALSE)) #Pruned results: forest, shurbland, wetland
 
 ##################################################################################################
 
@@ -2286,86 +2304,40 @@ plot(as.party(temporal.land2prune), tp_args = list(id = FALSE)) #Pruned results:
 ####Diatom plots for SCBD for Supplementary Information 2####
 ##Plot abundance between historical and 2007 sediments of diatom taxa with highest SCBD in both sediment sets. 
 
-A.formosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Asterionella.formosa.Hassal, surf.diat.abund$Asterionella.formosa.Hassal))
+A.formosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Asterionella.formosa, surf.diat.abund$Asterionella.formosa))
 colnames(A.formosa) [1]<- 'SITE_ID'
 colnames(A.formosa) [2]<- 'Hist_A.formosa'
 colnames(A.formosa) [3]<- 'Surf_A.formosa'
 
 A.formosa.long<- melt(A.formosa, id.vars=c("SITE_ID"))
 
-A.ambigua<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Aulacoseira.ambigua..Grunow..Simonsen, surf.diat.abund$Aulacoseira.ambigua..Grunow..Simonsen))
+A.ambigua<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Aulacoseira.ambigua, surf.diat.abund$Aulacoseira.ambigua))
 colnames(A.ambigua) [1]<- 'SITE_ID'
 colnames(A.ambigua) [2]<- 'Hist_A.ambigua'
 colnames(A.ambigua) [3]<- 'Surf_A.ambigua'
 
 A.ambigua.long<- melt(A.ambigua, id.vars=c("SITE_ID"))
 
-D.pseudostelligera<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee, surf.diat.abund$Discostella.pseudostelligera..Hustedt..Houk.et.Klee))
+D.pseudostelligera<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Discostella.pseudostelligera, surf.diat.abund$Discostella.pseudostelligera))
 colnames(D.pseudostelligera) [1]<- 'SITE_ID'
 colnames(D.pseudostelligera) [2]<- 'Hist_D.pseudo'
 colnames(D.pseudostelligera) [3]<- 'Surf_D.pseudo'
 
 D.pseudostelligera.long<- melt(D.pseudostelligera, id.vars=c("SITE_ID"))
 
-T.flocculosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Tabellaria.flocculosa..Roth..Kützing, surf.diat.abund$Tabellaria.flocculosa..Roth..Kützing))
+T.flocculosa<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Tabellaria.flocculosa, surf.diat.abund$Tabellaria.flocculosa))
 colnames(T.flocculosa) [1]<- 'SITE_ID'
 colnames(T.flocculosa) [2]<- 'Hist_T.flocculosa'
 colnames(T.flocculosa) [3]<- 'Surf_T.flocculosa'
 
 T.flocculosa.long<- melt(T.flocculosa, id.vars=c("SITE_ID"))
 
-S.construens<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Staurosira.construens.Ehrenberg, surf.diat.abund$Staurosira.construens.Ehrenberg))
+S.construens<- as.data.frame(cbind(hist.diat.abund$SITE_ID, hist.diat.abund$Staurosira.construens, surf.diat.abund$Staurosira.construens))
 colnames(S.construens) [1]<- 'SITE_ID'
 colnames(S.construens) [2]<- 'Hist_S.construens'
 colnames(S.construens) [3]<- 'Surf_S.construens'
 
 S.construens.long<- melt(S.construens, id.vars=c("SITE_ID"))
-
-##Plots for Supplementary info 1
-A.formosa.plot<- ggplot(A.formosa.long, aes(x=variable, y=value)) + geom_boxplot()
-A.formosa.plot<- A.formosa.plot + labs(x="Sediment type", y="Abundance (count)") 
-A.formosa.plot<- A.formosa.plot + theme_bw()
-A.formosa.plot<- A.formosa.plot + theme(axis.text.x = element_text(colour="black", size=16))
-A.formosa.plot<- A.formosa.plot + theme(axis.text.y = element_text(colour="black", size=16))
-A.formosa.plot<- A.formosa.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-A.formosa.plot<- A.formosa.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
-#A.formosa.plot<- A.formosa.plot + annotate("text", x=0.5, y=450, label="(a)", size=10)
-
-A.ambigua.plot<- ggplot(A.ambigua.long, aes(x=variable, y=value)) + geom_boxplot()
-A.ambigua.plot<- A.ambigua.plot + labs(x="Sediment type", y="Abundance (count)") 
-A.ambigua.plot<- A.ambigua.plot + theme_bw()
-A.ambigua.plot<- A.ambigua.plot + theme(axis.text.x = element_text(colour="black", size=16))
-A.ambigua.plot<- A.ambigua.plot + theme(axis.text.y = element_text(colour="black", size=16))
-A.ambigua.plot<- A.ambigua.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-A.ambigua.plot<- A.ambigua.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
-#A.ambigua.plot<- A.ambigua.plot + annotate("text", x=0.5, y=450, label="(b)", size=10)
-
-D.pseudostelligera.plot<- ggplot(D.pseudostelligera.long, aes(x=variable, y=value)) + geom_boxplot()
-D.pseudostelligera.plot<- D.pseudostelligera.plot + labs(x="Sediment type", y="Abundance (count)") 
-D.pseudostelligera.plot<- D.pseudostelligera.plot + theme_bw()
-D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.text.x = element_text(colour="black", size=16))
-D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.text.y = element_text(colour="black", size=16))
-D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-D.pseudostelligera.plot<- D.pseudostelligera.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
-#D.pseudostelligera.plot<- D.pseudostelligera.plot + annotate("text", x=0.5, y=450, label="(c)", size=10)
-
-T.flocculosa.plot<- ggplot(T.flocculosa.long, aes(x=variable, y=value)) + geom_boxplot()
-T.flocculosa.plot<- T.flocculosa.plot + labs(x="Sediment type", y="Abundance (count)") 
-T.flocculosa.plot<- T.flocculosa.plot + theme_bw()
-T.flocculosa.plot<- T.flocculosa.plot + theme(axis.text.x = element_text(colour="black", size=16))
-T.flocculosa.plot<- T.flocculosa.plot + theme(axis.text.y = element_text(colour="black", size=16))
-T.flocculosa.plot<- T.flocculosa.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-T.flocculosa.plot<- T.flocculosa.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
-#T.flocculosa.plot<- T.flocculosa.plot + annotate("text", x=0.5, y=450, label="(d)", size=10)
-
-S.construens.plot<- ggplot(S.construens.long, aes(x=variable, y=value)) + geom_boxplot()
-S.construens.plot<- S.construens.plot + labs(x="Sediment type", y="Abundance (count)") 
-S.construens.plot<- S.construens.plot + theme_bw()
-S.construens.plot<- S.construens.plot + theme(axis.text.x = element_text(colour="black", size=16))
-S.construens.plot<- S.construens.plot + theme(axis.text.y = element_text(colour="black", size=16))
-S.construens.plot<- S.construens.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-S.construens.plot<- S.construens.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
-#S.construens.plot<- S.construens.plot + annotate("text", x=0.5, y=450, label="(e)", size=10)
 
 ##Abundance plots done with 1:1 lines
 #Export all the species matrices and stack. 
@@ -2374,20 +2346,20 @@ write.csv(A.ambigua, "A.ambigua.csv")
 write.csv(D.pseudostelligera, "D.pseudostelligera.csv")
 write.csv(T.flocculosa, "T.flocculosa.csv")
 write.csv(S.construens, "S.construens.csv")
-#Still using n=186
+#Now using n=176
 
-diatomsS2<- read.csv(file.choose()) #S2diatoms_data.csv 
-#File path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2\Manuscript figures
+diatomsS4<- read.csv("S4diatoms_data.csv") #S4diatoms_data.csv 
+#Additional path: C:\Users\Winegardner\Documents\MCGILL\PhD chapters and projects\EPA National lakes Assessment\Chapter 2\Manuscript figures
 
-summary(diatomsS2)
+summary(diatomsS4)
 
-S2.plot<- ggplot(diatomsS2, aes(x=Modern_abundance, y=Historical_abundance)) + geom_point() + annotate("segment", x=-Inf, xend=Inf,y=-Inf, yend=Inf) + facet_wrap(~Species)
-S2.plot<- S2.plot + labs(x="2007 abundance (count)", y="Historical abundance (count)") 
-S2.plot<- S2.plot + theme_bw()
-S2.plot<- S2.plot + theme(axis.text.x = element_text(colour="black", size=16))
-S2.plot<- S2.plot + theme(axis.text.y = element_text(colour="black", size=16))
-S2.plot<- S2.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
-S2.plot<- S2.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
+S4.plot<- ggplot(diatomsS4, aes(x=Modern_abundance, y=Historical_abundance)) + geom_point() + annotate("segment", x=-Inf, xend=Inf,y=-Inf, yend=Inf) + facet_wrap(~Species)
+S4.plot<- S4.plot + labs(x="2007 abundance (count)", y="Historical abundance (count)") 
+S4.plot<- S4.plot + theme_bw()
+S4.plot<- S4.plot + theme(axis.text.x = element_text(colour="black", size=16))
+S4.plot<- S4.plot + theme(axis.text.y = element_text(colour="black", size=16))
+S4.plot<- S4.plot + theme(axis.title.x = element_text(size = rel(2), angle=00))
+S4.plot<- S4.plot + theme(axis.title.y = element_text(size = rel(2), angle=90))
 
 ##################################################################################################
 
@@ -2467,6 +2439,20 @@ hist.Srar #String
 hist.Srar<- as.data.frame(hist.Srar)
 summary(hist.Srar) #can get mean 
 
+#Check relationship between historical rarfied species richness and latitude and longitude.
+
+hist.Srar<- as.data.frame(cbind(hist.Srar, nla.highC.hist$LAT_DD, nla.highC.hist$LONG_DD))
+colnames(hist.Srar)[1]<- 'Srar'
+colnames(hist.Srar)[2]<- 'Lat'
+colnames(hist.Srar)[3]<- 'Long'
+
+hist.Srar.fit<- lm(Srar ~ Lat, data=hist.Srar) #no relationship
+summary(hist.Srar.fit)
+
+hist.Srar.fit2<- lm(Srar ~ Long, data=hist.Srar) #sig relationship
+summary(hist.Srar.fit2)
+qplot(Long, Srar, data=hist.Srar)
+
 #CPL
 hist.CPL.Srar <- rarefy(hist.eco.CPL[,3:1004], min(rowSums(hist.eco.CPL[,3:1004]))) 
 hist.CPL.Srar #String
@@ -2509,6 +2495,20 @@ surf.Srar <- rarefy(surf.eco[,4:927], min(rowSums(surf.eco[,4:927]))) #extra col
 surf.Srar #String
 surf.Srar<- as.data.frame(surf.Srar)
 summary(surf.Srar) #can get mean 
+
+#Check relationship between surface rarfied species richness and latitude and longitude.
+
+surf.Srar<- as.data.frame(cbind(surf.Srar, nla.highC.surf$LAT_DD, nla.highC.surf$LONG_DD))
+colnames(surf.Srar)[1]<- 'Srar'
+colnames(surf.Srar)[2]<- 'Lat'
+colnames(surf.Srar)[3]<- 'Long'
+
+surf.Srar.fit<- lm(Srar ~ Lat, data=surf.Srar) #no relationship
+summary(surf.Srar.fit)
+
+surf.Srar.fit2<- lm(Srar ~ Long, data=surf.Srar) #sig relationship
+summary(surf.Srar.fit2)
+qplot(Long, Srar, data=surf.Srar)
 
 #CPL
 surf.CPL.Srar <- rarefy(surf.eco.CPL[,4:927], min(rowSums(surf.eco.CPL[,4:927]))) #extra column in front of Site_ID
@@ -2718,12 +2718,18 @@ rsq.rpart(surf.shannonlandprune)  # visualize cross-validation result
 #0.33
 plot(as.party(surf.shannonlandprune), tp_args = list(id = FALSE))
 
-##THIS NEEDS TO BE CORRECTED###########
+
+
+
+
+
+
+
 #Use Effective numbers
 #Water quality
 surf.Eff.env<- as.data.frame(cbind(surf.Eff.dframe, waterqual.dat.red[,2:8])) #Need to correct this so that matches number of sites (reduced to 179)
-surf.Eff.env2<- rpart(surf.Effective~SECMEAN + CHLA + PTL + NTL + MEAN_T + COND + PH_FIELD, method="anova", data=surf.Shannon.env) 
-printcp(surf.Eff.env2) #Variables actually used in construction: 
+surf.Eff.env2<- rpart(surf.Effective~SECMEAN + CHLA + PTL + NTL + MEAN_T + COND + PH_FIELD, method="anova", data=surf.Eff.env) 
+printcp(surf.Eff.env2) #Variables actually used in construction: Chla, Cond, Mean temp, TN, pH
 plot(surf.Eff.env2)
 summary(surf.Eff.env2)
 surf.effenvprune<-  prune(surf.Eff.env2, cp=surf.Eff.env2$cptable[which.min(surf.Eff.env2$cptable[,"xerror"]),"CP"])
