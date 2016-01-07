@@ -7,7 +7,7 @@
 #Previous script: Rscript_NLA2007ch2_analysesBetaDiv_V5.R
 #R version: 3.1.2 (Pumpkin Helmet)
 
-##Last update: January 5, 2016 
+##Last update: January 7, 2016 
 ##Associated workspace: workspace_NLA2007ch2_analysesBetaDiv_V6.RData 
 ##Associated markdown: 
 ##Associated .txt of R script: Rscript_NLA2007ch2_analysesBetaDiv_V6.txt
@@ -1224,3 +1224,114 @@ dates.dat #Dating data with  binary assignments for pre-1850 based on radiometri
 ####NOTE TO CONTINUE: DATA SET-UP NOW READY TO MODIFY ANALYSES BASED ON REDUCED NUMBER OF SITES FROM CHARLES' GROUP.
 #As re-do spatial beta diversity analyses, edit to subset by CHARLES_GROUP == "YES". 
 #If get an updated list from Don Charles- re-run script with this new list, then continue. 
+
+
+
+#####UPDATED ANALYSES (MOSTLY SPATIAL) USING REDUCED SITES TO ACCOUNT FOR DON CHARLES' SITES ONLY. 
+#CARRY OVER ONLY ANALYSES THAT NEED TO BE REPEATED OR RE-DONE FROM V5 SCRIPT. 
+
+##################################################################################################
+####SPATIAL BETA-DIVERSITY (LEGENDRE FUNCTIONS)                                                  #
+##################################################################################################
+
+####Use beta.div to calculate total spatial BD on appropriately transformed data#### 
+##NB: beta.div uses non-transformed quantitative data 
+
+##Prep non-transformed quantitative surface diatoms. 
+surf.diat.abund #just QUANTITATIVE diatom data
+
+#Bind the non-transformed species columns to site, ecoregion and lat/long columns AS WELL as the column to delineate Charles' group diatoms. 
+surf.diat.abundnon<- as.data.frame(cbind(nla.diat.surf[,1], nla.diat.surf[,1216], nla.diat.surf[,1217], nla.diat.surf[,1218], nla.diat.surf[,1219], surf.diat.abund[,4:927]))
+colnames(surf.diat.abundnon)[1]<- 'SITE_ID'
+colnames(surf.diat.abundnon)[2]<- 'WSA_ECOREGION'
+colnames(surf.diat.abundnon)[3]<- 'LONG_DD'
+colnames(surf.diat.abundnon)[4]<- 'LAT_DD'
+colnames(surf.diat.abundnon)[5]<- 'CHARLES_GROUP'
+
+
+##Prep non-transformed quantitative historical diatoms. 
+#Bind the non-transformed species columns to site, ecoregion and lat/long columns AS WELL as the column to delineate Charles' group diatoms.
+hist.diat.abundnon<- as.data.frame(cbind(nla.diat.hist[,1], nla.diat.hist[,1216], nla.diat.hist[,1217], nla.diat.hist[,1218], nla.diat.hist[,1219], hist.diat.abund[,3:1004]))
+colnames(hist.diat.abundnon)[1]<- 'SITE_ID'
+colnames(hist.diat.abundnon)[2]<- 'WSA_ECOREGION'
+colnames(hist.diat.abundnon)[3]<- 'LONG_DD'
+colnames(hist.diat.abundnon)[4]<- 'LAT_DD'
+colnames(hist.diat.abundnon)[5]<- 'CHARLES_GROUP'
+
+
+##Surface - beta.div (without Hellinger transformation) - CHARLES GROUP ONLY. 
+surf.abundnon.charles<- as.data.frame(subset(surf.diat.abundnon, CHARLES_GROUP == "YES", drop=T)) #Subset first- 35 sites only. 
+
+surf.beta.div2 <- beta.div(surf.abundnon.charles[,6:929], sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
+summary(surf.beta.div2)
+surf.beta.div2$SStotal_BDtotal #SStotal = 22.39, BD total = 0.66
+surf.beta.div2$SCBD
+surf.beta.div2$LCBD
+surf.beta.div2$p.LCBD
+
+#Look at SCBD specifically
+surf.SCBD.summary<- as.data.frame(surf.beta.div2$SCBD)
+#write.csv(surf.SCBD.summary, "surf.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
+
+#Use percentage difference 
+surf.beta.div3 <- beta.div(surf.abundnon.charles[,6:929], method="percentagedifference", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
+summary(surf.beta.div3)
+surf.beta.div3$SStotal_BDtotal #SS total = 11.19, BD total = 0.33
+surf.beta.div3$SCBD #Null 
+surf.beta.div3$LCBD
+surf.beta.div3$p.LCBD
+
+#Make a dataframe with LCBD information for surface data using percentage difference
+surf.LCBD.values<- as.data.frame(surf.beta.div3$LCBD)
+surf.LCBD.p<- as.data.frame(surf.beta.div3$p.LCBD)
+surf.LCBD.summary<- as.data.frame(cbind(surf.abundnon.charles$SITE_ID, surf.abundnon.charles$WSA_ECOREGION, surf.abundnon.charles$LONG_DD, surf.abundnon.charles$LAT_DD, surf.LCBD.values, surf.LCBD.p))
+colnames(surf.LCBD.summary)[1]<- 'SITE_ID'
+colnames(surf.LCBD.summary)[2]<- 'WSA_ECOREGION'
+colnames(surf.LCBD.summary)[3]<- 'LONG_DD' 
+colnames(surf.LCBD.summary)[4]<- 'LAT_DD'
+colnames(surf.LCBD.summary)[5]<- 'LCBD'
+colnames(surf.LCBD.summary)[6]<- 'LCBD.P'
+
+#Look at sites with significant (p<0.05)
+surf.LCBD.summary.sig<- as.data.frame(subset(surf.LCBD.summary, LCBD.P<0.05))
+
+
+
+##Historical - beta.div (without Hellinger transformation) - CHARLES GROUP ONLY. 
+hist.abundnon.charles<- as.data.frame(subset(hist.diat.abundnon, CHARLES_GROUP == "YES", drop=T)) #Subset first- 35 sites only. 
+
+hist.beta.div2 <- beta.div(hist.abundnon.charles[,6:1007], sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
+summary(hist.beta.div2)
+hist.beta.div2$SStotal_BDtotal #SStotal = 22.51, BD total = 0.66
+hist.beta.div2$SCBD
+hist.beta.div2$LCBD
+hist.beta.div2$p.LCBD
+
+#Look at SCBD specifically
+hist.SCBD.summary<- as.data.frame(hist.beta.div2$SCBD)
+#write.csv(hist.SCBD.summary, "hist.SCBD.summary.csv") #so can order by magnitude and look at highest contributing species.
+
+#Use percentage difference 
+hist.beta.div3 <- beta.div(hist.abundnon.charles[,6:1007], method="percentagedifference", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
+summary(hist.beta.div3)
+hist.beta.div3$SStotal_BDtotal #SS total = 11.07, BD total = 0.33
+hist.beta.div3$SCBD #Null 
+hist.beta.div3$LCBD
+hist.beta.div3$p.LCBD
+
+#Make a dataframe with LCBD information for historical data using percentage difference
+hist.LCBD.values<- as.data.frame(hist.beta.div3$LCBD)
+hist.LCBD.p<- as.data.frame(hist.beta.div3$p.LCBD)
+hist.LCBD.summary<- as.data.frame(cbind(hist.abundnon.charles$SITE_ID, hist.abundnon.charles$WSA_ECOREGION, hist.abundnon.charles$LONG_DD, hist.abundnon.charles$LAT_DD, hist.LCBD.values, hist.LCBD.p))
+colnames(hist.LCBD.summary)[1]<- 'SITE_ID'
+colnames(hist.LCBD.summary)[2]<- 'WSA_ECOREGION'
+colnames(hist.LCBD.summary)[3]<- 'LONG_DD' 
+colnames(hist.LCBD.summary)[4]<- 'LAT_DD'
+colnames(hist.LCBD.summary)[5]<- 'LCBD'
+colnames(hist.LCBD.summary)[6]<- 'LCBD.P'
+
+#Look at sites with significant (p<0.05)
+hist.LCBD.summary.sig<- as.data.frame(subset(surf.LCBD.summary, LCBD.P<0.05))
+
+
+##CONTINUE LINE 1541 V5 script. 
